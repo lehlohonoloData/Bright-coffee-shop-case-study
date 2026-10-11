@@ -1,0 +1,127 @@
+select *
+from brightlearn_catalog.default.bright_coffee_shop 
+limit 100
+
+select
+ transaction_date,
+ dayname(transaction_date) as day_name,
+ monthname(transaction_date) as month_name 
+ from `brightlearn_catalog`.`default`.`bright_coffee_shop`
+ -----------------------------------------------------------------
+ select
+       transaction_date,
+ dayname(transaction_date) as day_name,
+ case
+     when day_name in ('Sat','Sun') then 'Weekend'
+    when day_name in ('Mon','Tue','Wed','Thu','Fri') then 'Weekday'
+ end as day_classification, 
+ monthname(transaction_date)as month_name
+ from `brightlearn_catalog`.`default`.`bright_coffee_shop`
+------------------------------------------------------------------------------------
+select
+       transaction_date,
+ dayname(transaction_date) as day_name,
+ case
+     when day_name in ('Sat','Sun') then 'Weekend'
+    when day_name in ('Mon','Tue','Wed','Thu','Fri') then 'Weekday'
+ end as day_classification,
+ case
+   when transaction_time between '06:00:00' and '11:59:00' then '01.Early Morning' 
+   when transaction_time between '12:00:00' and '17:59:00' then '02.Afternoon'
+   when transaction_time between '18:00:00' and '21:59:00' then '03.Evening'
+ end as time_classfication,
+ monthname(transaction_date)as month_name
+ from `brightlearn_catalog`.`default`.`bright_coffee_shop`
+ 
+ ---------------------------------------------------------------------------
+ select
+       transaction_date,
+
+ dayname(transaction_date) as day_name,
+ 
+ count(transaction_id) as numbers_of_sales,
+ sum(transaction_qty)as unit_sold,
+ count(distinct product_id) as unique_products,
+ count(store_id) as number_of_stores,
+ sum (unit_price*transaction_qty) as revenue,
+
+ case
+     when day_name in ('Sat','Sun') then 'Weekend'
+    when day_name in ('Mon','Tue','Wed','Thu','Fri') then 'Weekday'
+ end as day_classification,
+
+ case
+   when transaction_time between '06:00:00' and '11:59:00' then '01.Early Morning' 
+   when transaction_time between '12:00:00' and '17:59:00' then '02.Afternoon'
+   when transaction_time between '18:00:00' and '21:59:00' then '03.Evening'
+ end as time_classfication,
+
+ monthname(transaction_date)as month_name,
+ product_category,
+ product_type,
+ store_location,
+ product_detail
+ from `brightlearn_catalog`.`default`.`bright_coffee_shop`
+ group by
+  transaction_date,
+  store_location,
+  dayname(transaction_date),
+  product_type,
+  product_category,
+  product_detail,
+  case
+   when transaction_time between '06:00:00' and '11:59:00' then '01.Early Morning' 
+   when transaction_time between '12:00:00' and '17:59:00' then '02.Afternoon'
+   when transaction_time between '18:00:00' and '21:59:00' then '03.Evening'
+  end,
+  case
+     when dayname(transaction_date) in ('Sat','Sun') then 'Weekend'
+    when dayname(transaction_date) in ('Mon','Tue','Wed','Thu','Fri') then 'Weekday'
+  end;
+  ------------------------------
+
+----most transaction in the store location--
+ SELECT  store_location,
+    COUNT(DISTINCT transaction_id) AS total_transactions,
+    SUM(transaction_qty) AS total_units_sold,
+    SUM(transaction_qty * unit_price) AS total_revenue,
+    ROUND(SUM(transaction_qty * unit_price) / COUNT(DISTINCT transaction_id), 2) AS avg_transaction_value
+  FROM `brightlearn_catalog`.`default`.`bright_coffee_shop`
+GROUP BY store_location
+ORDER BY total_revenue DESC;  
+----------------------------------
+WITH monthly_sales AS (
+    SELECT 
+        store_location,
+        DATE_TRUNC('month', transaction_date) AS sales_month,
+        SUM(transaction_qty * unit_price) AS monthly_revenue
+    FROM `brightlearn_catalog`.`default`.`bright_coffee_shop`
+    WHERE store_location = 'Lower Manhattan'-----wrong
+    GROUP BY store_location, DATE_TRUNC('month', transaction_date)
+)
+SELECT 
+    sales_month,
+    monthly_revenue,
+    LAG(monthly_revenue) OVER (ORDER BY sales_month) AS previous_month_revenue,
+    ROUND(
+        (monthly_revenue - LAG(monthly_revenue) OVER (ORDER BY sales_month)) ---wrong
+        / NULLIF(LAG(monthly_revenue) OVER (ORDER BY sales_month), 0) * 100, 
+        2
+    ) AS pct_revenue_decline
+FROM monthly_sales
+ORDER BY sales_month;
+---------------------------------------
+select distinct store_location
+from `brightlearn_catalog`.`default`.`bright_coffee_shop`
+
+--------------------------------------------------------
+SELECT Day_classsification,
+       sum(revenue) as total_revenue
+      count (distinct product_id) as total_product
+      from brightlearn_catalog.default.bright_coffee_shop
+      group by day_classsification --wrong
+      order by total_revenue desc;
+------------------------
+select*
+from `brightlearn_catalog`.`default`.`bright_coffee_shop`
+where store_id is not null;
